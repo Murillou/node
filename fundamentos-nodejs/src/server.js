@@ -1,7 +1,8 @@
 import http from 'node:http';
 import { json } from './middlewares/json.js';
+import { Database } from './database.js';
 
-const users = [];
+const database = new Database();
 
 const server = http.createServer(async (request, response) => {
   const { method, url } = request;
@@ -9,22 +10,26 @@ const server = http.createServer(async (request, response) => {
   await json(request, response);
 
   if (method === 'GET' && url === '/users') {
-    return response
-      .setHeader('Content-type', 'application/json')
-      .end(JSON.stringify(users));
+    const users = database.select('users');
+
+    return response.end(JSON.stringify(users));
   }
 
   if (method === 'POST' && url == '/users') {
-    users.push({
-      id: 1,
-      name: 'Murillo',
-      email: 'Murillovinicius13@hotmail.com',
-    });
+    const { name, email } = request.body;
 
-    return response.end('Usuário criado');
+    const user = {
+      id: 1,
+      name,
+      email,
+    };
+
+    database.insert('users', user);
+
+    return response.writeHead(201).end();
   }
 
-  return response.end('Hello Ignite!');
+  return response.writeHead(404).end('Not Found');
 });
 
 server.listen(3333);
